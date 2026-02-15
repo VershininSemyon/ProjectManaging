@@ -1,0 +1,13 @@
+
+venv
+.venv
+env
+.env
+.idea
+*.log
+__pycache__
+*.sqlite3
+staticfiles
+migrations
+celerybeat-schedule
+gunicorn.ctl

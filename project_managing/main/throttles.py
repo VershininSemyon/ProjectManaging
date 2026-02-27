@@ -12,3 +12,7 @@ class TeamRateThrottle(AnonRateThrottle):
 
 class TaskRateThrottle(AnonRateThrottle):
     scope = 'tasks'
+
+
+class MemberRateThrottle(AnonRateThrottle):
+    scope = 'members'

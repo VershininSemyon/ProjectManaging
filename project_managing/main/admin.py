@@ -1,7 +1,7 @@
 
 from django.contrib import admin
 
-from .models import Project, Task, Team
+from .models import Project, Task, Team, Member
 
 
 @admin.register(Project)
@@ -40,8 +40,6 @@ class TeamAdmin(admin.ModelAdmin):
     list_filter = (
         'project',
     )
-    
-    filter_horizontal = ('members',)
 
 
 @admin.register(Task)
@@ -57,8 +55,6 @@ class TaskAdmin(admin.ModelAdmin):
     search_fields = (
         'title',
         'description',
-        'team__title',
-        'assignee__username'
     )
     
     list_filter = (
@@ -69,3 +65,22 @@ class TaskAdmin(admin.ModelAdmin):
     )
     
     filter_horizontal = ('assignee',)
+
+
+@admin.register(Member)
+class MemberAdmin(admin.ModelAdmin):
+    list_display = (
+        'role_type',
+        'user__username',
+        'team__title',
+    )
+    
+    search_fields = (
+        'role_type',
+    )
+    
+    list_filter = (
+        'role_type',
+        'user',
+        'team',
+    )

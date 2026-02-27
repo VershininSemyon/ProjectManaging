@@ -165,11 +165,13 @@ REST_FRAMEWORK = {
         'main.throttles.ProjectRateThrottle',
         'main.throttles.TeamRateThrottle',
         'main.throttles.TaskRateThrottle',
+        'main.throttles.MemberRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
         'projects': '20/min',
         'teams': '15/min',
         'tasks': '10/min',
+        'members':' 10/min'
     },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }

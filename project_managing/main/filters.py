@@ -1,7 +1,7 @@
 
 from django_filters import rest_framework as filters
 
-from .models import Project, Team, Task
+from .models import Project, Team, Task, Member
 
 
 class ProjectFilter(filters.FilterSet):
@@ -41,4 +41,14 @@ class TaskFilter(filters.FilterSet):
             'team__title': ['exact', 'icontains'],
             'team__project': ['exact'],
             'team__project__title': ['exact', 'icontains'],
+        }
+
+
+class MemberFilter(filters.FilterSet):
+    class Meta:
+        model = Member
+        fields = {
+            'role_type': ['exact'],
+            'user': ['exact'],
+            'team': ['exact'],
         }

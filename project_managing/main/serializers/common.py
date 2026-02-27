@@ -1,7 +1,7 @@
 
 from rest_framework import serializers
 
-from .models import Project, Task, Team
+from main.models import Project, Task, Team, Member
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -50,3 +50,13 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = '__all__'
         read_only_fields = ('id', 'created_at', )
+
+
+class MemberSerializer(serializers.ModelSerializer):
+    team_title = serializers.CharField(source='team.title', read_only=True)
+    user_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = Member
+        fields = '__all__'
+        read_only_fields = ('id', )

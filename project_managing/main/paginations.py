@@ -15,3 +15,8 @@ class TeamPagination(PageNumberPagination):
 class TaskPagination(PageNumberPagination):
     page_size = 2
     page_size_query_param = "task_page_size"
+
+
+class MemberPagination(PageNumberPagination):
+    page_size = 3
+    page_size_query_param = "member_page_size"

@@ -1,6 +1,12 @@
 
 from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
+from main.serializers.common import (MemberSerializer, ProjectSerializer,
+                                     TaskSerializer, TeamSerializer)
+from main.serializers.detailed import (DetailMemberSerializer,
+                                       DetailProjectSerializer,
+                                       DetailTaskSerializer,
+                                       DetailTeamSerializer)
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
@@ -9,11 +15,11 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from .filters import ProjectFilter, TaskFilter, TeamFilter
-from .models import Project, Task, Team
-from .paginations import ProjectPagination, TaskPagination, TeamPagination
+from .filters import MemberFilter, ProjectFilter, TaskFilter, TeamFilter
+from .models import Member, Project, Task, Team
+from .paginations import (MemberPagination, ProjectPagination, TaskPagination,
+                          TeamPagination)
 from .permissions import *
-from .serializers import ProjectSerializer, TaskSerializer, TeamSerializer
 from .tasks import (send_project_created_notification,
                     send_project_deleted_notification)
 
@@ -44,6 +50,11 @@ class ProjectViewSet(ModelViewSet):
 
     pagination_class = ProjectPagination
     throttle_scope = "projects"
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailProjectSerializer
+        return ProjectSerializer
 
     def create(self, request, *args, **kwargs):
         result = super().create(request, *args, **kwargs)
@@ -96,6 +107,11 @@ class TeamViewSet(ModelViewSet):
     pagination_class = TeamPagination
     throttle_scope = "teams"
 
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailTeamSerializer
+        return TeamSerializer
+
     def get_queryset(self):
         if 'project_pk' in self.kwargs:
             return Team.objects.filter(project_id=self.kwargs['project_pk'])
@@ -136,9 +152,55 @@ class TaskViewSet(ModelViewSet):
     pagination_class = TaskPagination
     throttle_scope = "tasks"
 
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailTaskSerializer
+        return TaskSerializer
+
     def get_queryset(self):
         if 'team_pk' in self.kwargs:
             return Task.objects.filter(team_id=self.kwargs['team_pk'])
+        return super().get_queryset()
+    
+    def perform_create(self, serializer):
+        if 'team_pk' in self.kwargs:
+            serializer.save(team_id=self.kwargs['team_pk'])
+        else:
+            serializer.save()
+
+
+class MemberViewSet(ModelViewSet):
+    queryset = Member.objects.all()
+    serializer_class = MemberSerializer
+
+    authentication_classes = [JWTAuthentication, SessionAuthentication]
+    permission_classes = []
+
+    filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter
+    ]
+
+    filterset_class = MemberFilter
+    search_fields = [
+        'role_type', ''        
+    ]
+    ordering_fields = [
+        'role_type', 'team', 'user'
+    ]
+
+    pagination_class = MemberPagination
+    throttle_scope = "members"
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailMemberSerializer
+        return MemberSerializer
+
+    def get_queryset(self):
+        if 'team_pk' in self.kwargs:
+            return Member.objects.filter(team_id=self.kwargs['team_pk'])
         return super().get_queryset()
     
     def perform_create(self, serializer):

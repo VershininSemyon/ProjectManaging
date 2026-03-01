@@ -25,7 +25,7 @@ from .tasks import (send_project_created_notification,
 
 
 class ProjectViewSet(ModelViewSet):
-    queryset = Project.objects.all()
+    queryset = Project.objects.prefetch_related('teams').select_related('creator')
     serializer_class = ProjectSerializer
 
     authentication_classes = [JWTAuthentication, SessionAuthentication]
@@ -82,7 +82,7 @@ class ProjectViewSet(ModelViewSet):
 
 
 class TeamViewSet(ModelViewSet):
-    queryset = Team.objects.all()
+    queryset = Team.objects.prefetch_related('members', 'tasks').select_related('project')
     serializer_class = TeamSerializer
 
     authentication_classes = [JWTAuthentication, SessionAuthentication]
@@ -125,7 +125,7 @@ class TeamViewSet(ModelViewSet):
 
 
 class TaskViewSet(ModelViewSet):
-    queryset = Task.objects.all()
+    queryset = Task.objects.prefetch_related('assignee').select_related('team')
     serializer_class = TaskSerializer
 
     authentication_classes = [JWTAuthentication, SessionAuthentication]
@@ -170,7 +170,7 @@ class TaskViewSet(ModelViewSet):
 
 
 class MemberViewSet(ModelViewSet):
-    queryset = Member.objects.all()
+    queryset = Member.objects.prefetch_related('assigned_tasks').select_related('user', 'team')
     serializer_class = MemberSerializer
 
     authentication_classes = [JWTAuthentication, SessionAuthentication]

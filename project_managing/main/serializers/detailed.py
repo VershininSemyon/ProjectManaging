@@ -3,7 +3,7 @@ from .common import ProjectSerializer, TeamSerializer, TaskSerializer, MemberSer
 
 
 class DetailProjectSerializer(ProjectSerializer):
-    teams = TeamSerializer(many=True, read_only=True)
+    teams = TeamSerializer(read_only=True, many=True)
 
 
 class DetailTeamSerializer(TeamSerializer):
@@ -19,3 +19,4 @@ class DetailTaskSerializer(TaskSerializer):
 
 class DetailMemberSerializer(MemberSerializer):
     team = TeamSerializer(read_only=True)
+    assigned_tasks = TaskSerializer(read_only=True, many=True)

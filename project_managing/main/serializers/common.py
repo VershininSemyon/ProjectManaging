@@ -56,6 +56,11 @@ class MemberSerializer(serializers.ModelSerializer):
     team_title = serializers.CharField(source='team.title', read_only=True)
     user_username = serializers.CharField(source='user.username', read_only=True)
 
+    assigned_tasks_count = serializers.SerializerMethodField(method_name='get_assigned_tasks_count')
+
+    def get_assigned_tasks_count(self, obj):
+        return obj.assigned_tasks.count()
+
     class Meta:
         model = Member
         fields = '__all__'

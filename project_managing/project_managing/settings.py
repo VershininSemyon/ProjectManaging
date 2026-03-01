@@ -1,11 +1,9 @@
 
 import os
-
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
 
-from dotenv import load_dotenv
-load_dotenv()
+from .config import settings
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -16,12 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = settings.DJANGO_SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False').capitalize() == 'True'
+DEBUG = settings.DEBUG
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
+ALLOWED_HOSTS = settings.ALLOWED_HOSTS
 
 
 # Application definition
@@ -40,6 +38,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_celery_results',
     'django_filters',
+    'django_prometheus',
 
     'users',
     'authentication',
@@ -47,6 +46,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -55,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware'
 ]
 
 
@@ -97,11 +98,11 @@ WSGI_APPLICATION = 'project_managing.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('POSTGRES_HOST'),
-        'PORT': os.getenv('POSTGRES_PORT'),
+        'NAME': settings.POSTGRES_DB,
+        'USER': settings.POSTGRES_USER,
+        'PASSWORD': settings.POSTGRES_PASSWORD,
+        'HOST': settings.POSTGRES_HOST,
+        'PORT': settings.POSTGRES_PORT,
     }
 }
 
@@ -150,6 +151,90 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+        'access': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOG_DIR / 'api.log'),
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'celery': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOG_DIR / 'celery.log'),
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'access_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOG_DIR / 'access.log'),
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 5,
+            'formatter': 'access',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.db.backends': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+        },
+        'django.server': {
+            'handlers': ['access_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'celery': {
+            'handlers': ['celery', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'voting_service_app': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -161,6 +246,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_THROTTLE_CLASSES': [
         'main.throttles.ProjectRateThrottle',
         'main.throttles.TeamRateThrottle',
@@ -173,7 +259,6 @@ REST_FRAMEWORK = {
         'tasks': '10/min',
         'members':' 10/min'
     },
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 
@@ -225,14 +310,14 @@ CACHES = {
         'LOCATION': 'redis://redis:6379/1',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'PASSWORD': os.getenv('REDIS_PASSWORD')
+            'PASSWORD': settings.REDIS_PASSWORD
         },
     }
 }
 
 
-CELERY_BROKER_URL = f'redis://:{os.getenv("REDIS_PASSWORD")}@redis:6379/0'
-CELERY_RESULT_BACKEND = f'redis://:{os.getenv("REDIS_PASSWORD")}@redis:6379/0'
+CELERY_BROKER_URL = f'redis://:{settings.REDIS_PASSWORD}@redis:6379/0'
+CELERY_RESULT_BACKEND = f'redis://:{settings.REDIS_PASSWORD}@redis:6379/0'
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -240,6 +325,5 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = os.getenv('SMTP_GMAIL_USER')
-EMAIL_HOST_PASSWORD = os.getenv('SMTP_GMAIL_PASSWORD')
-
+EMAIL_HOST_USER = settings.SMTP_GMAIL_USER
+EMAIL_HOST_PASSWORD = settings.SMTP_GMAIL_PASSWORD

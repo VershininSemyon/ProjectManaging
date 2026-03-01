@@ -8,11 +8,12 @@ from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-
     path('api/v1/docs/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/v1/docs/schema/swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger'),
     path('api/v1/docs/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    path('admin/', admin.site.urls),
+    path('', include('django_prometheus.urls')),
 
     path('api/v1/auth/', include('users.urls')),
     path('api/v1/auth/', include('authentication.urls')),

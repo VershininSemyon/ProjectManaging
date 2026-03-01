@@ -1,4 +1,5 @@
 amqp==5.3.1
+annotated-types==0.7.0
 asgiref==3.11.1
 attrs==25.4.0
 billiard==4.2.4
@@ -12,9 +13,10 @@ click-plugins==1.1.1.2
 click-repl==0.3.0
 cryptography==46.0.5
 defusedxml==0.7.1
-Django==6.0.2
+Django==5.2.11
 django-cors-headers==4.9.0
 django-filter==25.2
+django-prometheus==2.4.1
 django-redis==6.0.0
 django-restframework==0.0.1
 django_celery_results==2.6.0
@@ -40,6 +42,9 @@ prometheus_client==0.24.1
 prompt_toolkit==3.0.52
 psycopg2-binary==2.9.11
 pycparser==3.0
+pydantic==2.12.5
+pydantic-settings==2.13.1
+pydantic_core==2.41.5
 PyJWT==2.11.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
@@ -56,6 +61,7 @@ social-auth-app-django==5.7.0
 social-auth-core==4.8.5
 sqlparse==0.5.5
 tornado==6.5.4
+typing-inspection==0.4.2
 typing_extensions==4.15.0
 tzdata==2025.3
 tzlocal==5.3.1

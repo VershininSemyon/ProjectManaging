@@ -1,0 +1,120 @@
+
+{
+    "title": "Django Мониторинг",
+    "timezone": "browser",
+    "panels": [
+        {
+            "id": 1,
+            "title": "Скорость HTTP запросов",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "targets": [
+                {
+                    "expr": "rate(django_http_requests_total_by_method_total[1m])",
+                    "legendFormat": "{{method}}"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "title": "HTTP ответы по статусам",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "targets": [
+                {
+                    "expr": "rate(django_http_responses_total_by_status_total[1m])",
+                    "legendFormat": "{{status}}"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "title": "Задержка запросов",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(django_http_requests_latency_seconds_by_view_method_bucket[5m])) by (le, view, method))",
+                    "legendFormat": "{{view}} - {{method}}"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "title": "Использование памяти",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+            "targets": [
+                {
+                    "expr": "process_resident_memory_bytes / 1024 / 1024",
+                    "legendFormat": "RSS (МБ)"
+                },
+                {
+                    "expr": "process_virtual_memory_bytes / 1024 / 1024",
+                    "legendFormat": "Виртуальная (МБ)"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "title": "Использование CPU",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+            "targets": [
+                {
+                    "expr": "rate(process_cpu_seconds_total[1m])",
+                    "legendFormat": "Ядра CPU"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "title": "Открытые файловые дескрипторы",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 12, "y": 16},
+            "targets": [
+                {
+                    "expr": "process_open_fds"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "title": "Всего запросов",
+            "type": "stat",
+            "gridPos": {"h": 4, "w": 6, "x": 18, "y": 16},
+            "targets": [
+                {
+                    "expr": "sum(django_http_requests_before_middlewares_total)"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "title": "Запросы по представлениям",
+            "type": "table",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+            "targets": [
+                {
+                    "expr": "topk(10, sum(django_http_requests_total_by_view_transport_method_total) by (view, method))",
+                    "format": "table",
+                    "instant": true
+                }
+            ],
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "Value": "Количество",
+                            "method": "Метод",
+                            "view": "Представление"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

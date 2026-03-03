@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from main.models import Project, Task, Team
+from main.models import Project, Team, Member, Task
 from users.models import User
 
 
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'  • Проект уже существует: "{project.title}"')
             projects.append(project)
         
-        self.stdout.write('\nСоздание команд...')
+        self.stdout.write('\nСоздание команд и участников...')
         teams = []
         team_names = ['Разработчики', 'Дизайнеры', 'Тестировщики', 'Аналитики', 'DevOps', 'Менеджеры']
         
@@ -113,17 +113,40 @@ class Command(BaseCommand):
                     project=project,
                     defaults={}
                 )
+                
                 if created:
-                    num_members = random.randint(2, 5)
-                    selected_users = random.sample(users, min(num_members, len(users)))
-                    team.members.set(selected_users)
-                    
                     self.stdout.write(f'  ✓ Создана команда: "{team.title}"')
                     self.stdout.write(f'      Проект: {project.title}')
-                    self.stdout.write(f'      Участники: {", ".join([u.get_full_name() for u in selected_users])}')
+                    
+                    # Создаем участников команды через модель Member
+                    num_members = random.randint(2, 5)
+                    selected_users = random.sample(users, min(num_members, len(users)))
+                    
+                    members = []
+                    for user in selected_users:
+                        # Определяем роль для участника
+                        if user == creator:
+                            role = Member.RoleTypes.ADMINISTRATOR
+                        elif random.random() < 0.3:  # 30% вероятность стать модератором
+                            role = Member.RoleTypes.MODERATOR
+                        else:
+                            role = Member.RoleTypes.PARTICIPANT
+                        
+                        member, member_created = Member.objects.get_or_create(
+                            user=user,
+                            team=team,
+                            defaults={'role_type': role}
+                        )
+                        members.append(member)
+                    
+                    member_names = [f"{m.user.get_full_name()} ({m.get_role_type_display()})" for m in members]
+                    self.stdout.write(f'      Участники: {", ".join(member_names)}')
                 else:
                     self.stdout.write(f'  • Команда уже существует: "{team.title}"')
-                teams.append(team)
+                    # Получаем существующих участников
+                    members = list(Member.objects.filter(team=team))
+                
+                teams.append((team, members))
         
         self.stdout.write('\nСоздание задач...')
         task_titles = [
@@ -146,19 +169,12 @@ class Command(BaseCommand):
         
         statuses = [status[0] for status in Task.TaskStatus.choices]
         
-        for team in teams:
+        for team, members in teams:
             num_tasks = random.randint(3, 6)
             selected_tasks = random.sample(task_titles, min(num_tasks, len(task_titles)))
             
             for task_title in selected_tasks:
                 deadline = timezone.now() + timedelta(days=random.randint(1, 30))
-                
-                potential_assignees = list(team.members.all())
-                if potential_assignees:
-                    num_assignees = random.randint(1, min(3, len(potential_assignees)))
-                    assignees = random.sample(potential_assignees, num_assignees)
-                else:
-                    assignees = []
                 
                 task, created = Task.objects.get_or_create(
                     title=task_title,
@@ -171,7 +187,10 @@ class Command(BaseCommand):
                 )
                 
                 if created:
-                    if assignees:
+                    # Назначаем исполнителей через Member
+                    if members:
+                        num_assignees = random.randint(1, min(3, len(members)))
+                        assignees = random.sample(members, num_assignees)
                         task.assignee.set(assignees)
                     
                     status_display = dict(Task.TaskStatus.choices)[task.status]
@@ -179,8 +198,9 @@ class Command(BaseCommand):
                     self.stdout.write(f'      Команда: {team.title}')
                     self.stdout.write(f'      Статус: {status_display}')
                     self.stdout.write(f'      Дедлайн: {deadline.strftime("%d.%m.%Y")}')
-                    if assignees:
-                        self.stdout.write(f'      Исполнители: {", ".join([u.get_full_name() for u in assignees])}')
+                    if created and assignees:
+                        assignee_names = [f"{a.user.get_full_name()}" for a in assignees]
+                        self.stdout.write(f'      Исполнители: {", ".join(assignee_names)}')
                 else:
                     self.stdout.write(f'  • Задача уже существует: "{task.title}"')
         
@@ -190,5 +210,6 @@ class Command(BaseCommand):
         self.stdout.write(f'Пользователей: {User.objects.count()}')
         self.stdout.write(f'Проектов: {Project.objects.count()}')
         self.stdout.write(f'Команд: {Team.objects.count()}')
+        self.stdout.write(f'Участников команд: {Member.objects.count()}')
         self.stdout.write(f'Задач: {Task.objects.count()}')
         self.stdout.write('='*50)

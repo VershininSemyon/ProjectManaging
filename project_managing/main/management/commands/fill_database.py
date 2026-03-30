@@ -40,9 +40,9 @@ class Command(BaseCommand):
             if created:
                 user.set_password('password123')
                 user.save()
-                self.stdout.write(f'  ✓ Создан пользователь: {user.get_full_name()} (@{user.username})')
+                self.stdout.write(f'   Создан пользователь: {user.get_full_name()} (@{user.username})')
             else:
-                self.stdout.write(f'  • Пользователь уже существует: {user.get_full_name()}')
+                self.stdout.write(f'   Пользователь уже существует: {user.get_full_name()}')
             users.append(user)
         
         self.stdout.write('\nСоздание проектов...')
@@ -91,11 +91,11 @@ class Command(BaseCommand):
                 }
             )
             if created:
-                self.stdout.write(f'  ✓ Создан проект: "{project.title}"')
+                self.stdout.write(f'   Создан проект: "{project.title}"')
                 self.stdout.write(f'      Создатель: {creator.get_full_name()}')
                 self.stdout.write(f'      Доступ: {"Приватный" if project.is_private else "Публичный"}')
             else:
-                self.stdout.write(f'  • Проект уже существует: "{project.title}"')
+                self.stdout.write(f'   Проект уже существует: "{project.title}"')
             projects.append(project)
         
         self.stdout.write('\nСоздание команд и участников...')
@@ -115,19 +115,17 @@ class Command(BaseCommand):
                 )
                 
                 if created:
-                    self.stdout.write(f'  ✓ Создана команда: "{team.title}"')
+                    self.stdout.write(f'   Создана команда: "{team.title}"')
                     self.stdout.write(f'      Проект: {project.title}')
                     
-                    # Создаем участников команды через модель Member
                     num_members = random.randint(2, 5)
                     selected_users = random.sample(users, min(num_members, len(users)))
                     
                     members = []
                     for user in selected_users:
-                        # Определяем роль для участника
-                        if user == creator:
+                        if user == project.creator:
                             role = Member.RoleTypes.ADMINISTRATOR
-                        elif random.random() < 0.3:  # 30% вероятность стать модератором
+                        elif random.random() < 0.3:
                             role = Member.RoleTypes.MODERATOR
                         else:
                             role = Member.RoleTypes.PARTICIPANT
@@ -142,8 +140,7 @@ class Command(BaseCommand):
                     member_names = [f"{m.user.get_full_name()} ({m.get_role_type_display()})" for m in members]
                     self.stdout.write(f'      Участники: {", ".join(member_names)}')
                 else:
-                    self.stdout.write(f'  • Команда уже существует: "{team.title}"')
-                    # Получаем существующих участников
+                    self.stdout.write(f'   Команда уже существует: "{team.title}"')
                     members = list(Member.objects.filter(team=team))
                 
                 teams.append((team, members))
@@ -176,40 +173,51 @@ class Command(BaseCommand):
             for task_title in selected_tasks:
                 deadline = timezone.now() + timedelta(days=random.randint(1, 30))
                 
+                created_by = random.choice(members) if members else None
+                
                 task, created = Task.objects.get_or_create(
                     title=task_title,
                     team=team,
                     defaults={
                         'description': f'Необходимо выполнить задачу: {task_title}. Подробности уточняйте у менеджера.',
                         'deadline': deadline,
-                        'status': random.choice(statuses)
+                        'status': random.choice(statuses),
+                        'created_by': created_by
                     }
                 )
                 
                 if created:
-                    # Назначаем исполнителей через Member
+                    assignees = []
                     if members:
                         num_assignees = random.randint(1, min(3, len(members)))
                         assignees = random.sample(members, num_assignees)
                         task.assignee.set(assignees)
                     
                     status_display = dict(Task.TaskStatus.choices)[task.status]
-                    self.stdout.write(f'  ✓ Создана задача: "{task.title}"')
+                    self.stdout.write(f'   Создана задача: "{task.title}"')
                     self.stdout.write(f'      Команда: {team.title}')
                     self.stdout.write(f'      Статус: {status_display}')
                     self.stdout.write(f'      Дедлайн: {deadline.strftime("%d.%m.%Y")}')
-                    if created and assignees:
+                    if created_by:
+                        self.stdout.write(f'      Создатель: {created_by.user.get_full_name()}')
+                    if assignees:
                         assignee_names = [f"{a.user.get_full_name()}" for a in assignees]
                         self.stdout.write(f'      Исполнители: {", ".join(assignee_names)}')
                 else:
-                    self.stdout.write(f'  • Задача уже существует: "{task.title}"')
+                    self.stdout.write(f'   Задача уже существует: "{task.title}"')
         
         self.stdout.write('\n' + '='*50)
         self.stdout.write(self.style.SUCCESS('ЗАПОЛНЕНИЕ БАЗЫ ДАННЫХ ЗАВЕРШЕНО!'))
         self.stdout.write('='*50)
+        
+        total_tasks = Task.objects.count()
+        tasks_without_creator = Task.objects.filter(created_by__isnull=True).count()
+        
         self.stdout.write(f'Пользователей: {User.objects.count()}')
         self.stdout.write(f'Проектов: {Project.objects.count()}')
         self.stdout.write(f'Команд: {Team.objects.count()}')
         self.stdout.write(f'Участников команд: {Member.objects.count()}')
-        self.stdout.write(f'Задач: {Task.objects.count()}')
+        self.stdout.write(f'Задач: {total_tasks}')
+        if tasks_without_creator > 0:
+            self.stdout.write(self.style.WARNING(f'  ⚠ Задач без создателя: {tasks_without_creator}'))
         self.stdout.write('='*50)

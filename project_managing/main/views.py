@@ -19,7 +19,8 @@ from .filters import MemberFilter, ProjectFilter, TaskFilter, TeamFilter
 from .models import Member, Project, Task, Team
 from .paginations import (MemberPagination, ProjectPagination, TaskPagination,
                           TeamPagination)
-from .permissions import *
+from .permissions import (MemberPermission, ProjectPermission, TaskPermission,
+                          TeamPermission)
 from .tasks import (send_project_created_notification,
                     send_project_deleted_notification)
 
@@ -29,7 +30,7 @@ class ProjectViewSet(ModelViewSet):
     serializer_class = ProjectSerializer
 
     authentication_classes = [JWTAuthentication, SessionAuthentication]
-    permission_classes = []
+    permission_classes = [ProjectPermission]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -86,7 +87,7 @@ class TeamViewSet(ModelViewSet):
     serializer_class = TeamSerializer
 
     authentication_classes = [JWTAuthentication, SessionAuthentication]
-    permission_classes = []
+    permission_classes = [TeamPermission]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -129,7 +130,7 @@ class TaskViewSet(ModelViewSet):
     serializer_class = TaskSerializer
 
     authentication_classes = [JWTAuthentication, SessionAuthentication]
-    permission_classes = []
+    permission_classes = [TaskPermission]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -174,7 +175,7 @@ class MemberViewSet(ModelViewSet):
     serializer_class = MemberSerializer
 
     authentication_classes = [JWTAuthentication, SessionAuthentication]
-    permission_classes = []
+    permission_classes = [MemberPermission]
 
     filter_backends = [
         DjangoFilterBackend,

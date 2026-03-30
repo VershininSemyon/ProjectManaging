@@ -43,11 +43,11 @@ class Task(models.Model):
     description = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-
-    assignee = models.ManyToManyField(to=Member, related_name='assigned_tasks')
-    team = models.ForeignKey(to=Team, related_name='tasks', on_delete=models.CASCADE)
-
     deadline = models.DateTimeField()
+
+    created_by = models.ForeignKey(to=Member, related_name='created_tasks', on_delete=models.CASCADE)
+    team = models.ForeignKey(to=Team, related_name='tasks', on_delete=models.CASCADE)
+    assignee = models.ManyToManyField(to=Member, related_name='assigned_tasks')
 
     class TaskStatus(models.TextChoices):
         IN_PROCESS = 'in_process', 'В процессе'
